@@ -18,4 +18,5 @@ I plan to make the BLE central unit with a buildroot image running on the Pi4, w
 > - Display the feedback from the central with the total number of tools currently checked out of the toolbox.
 > - Wait for another ~5 seconds for another tool scan
 > - Return to sleep.
-> As a fallback, I can simulate the BLE scanner functionality using Silicon Labs SI Connect app, so if my scanner project in my other class doesn't end up working (I don't expect I'll have an issue with it, I am LOVING that class, and I'm doing very well), I can still validate the tool control Pi system by using an emulated scanner.
+> <br>
+As a fallback, I can simulate the BLE scanner functionality using Silicon Labs SI Connect app, so if my scanner project in my other class doesn't end up working (I don't expect I'll have an issue with it, I am LOVING that class, and I'm doing very well), I can still validate the tool control Pi system by using an emulated scanner.
