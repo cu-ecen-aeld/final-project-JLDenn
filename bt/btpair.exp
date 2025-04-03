@@ -1,0 +1,39 @@
+#!/usr/bin/expect -f
+
+set device [lindex $argv 0];
+
+spawn bluetoothctl
+expect "Agent registered"
+send -- "devices Paired\r"
+
+set timeout 1
+expect {
+	"Device $device" {
+		send -- "disconnect $device\r"
+	} timeout {
+		send -- "remove $device\r"
+		set timeout 5
+		expect {
+			"$device not available" {send -- "scan on\r"}
+			"Device has been removed" {send -- "scan on\r"}
+			timeout {send -- "scan on\r"}
+		}
+		
+		set timeout 60
+		expect "Device $device"
+		send -- "pair $device\r"
+		expect "Confirm passkey" 
+		send -- "yes\r"
+		expect "Pairing successful"
+		send -- "connect $device\r"
+		expect "Connection successful"
+		send -- "trust $device\r"
+		expect "trust succeeded"
+	
+		send -- "disconnect\r"
+		expect "Device $device Connected: no"
+	}
+}
+
+send -- "exit\r"
+expect eof
