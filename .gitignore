@@ -1,3 +1,7 @@
 *.o
 
 bt/*.txt
+
+datactrl/datactrl
+database
+database/*

@@ -1,7 +1,7 @@
 #!/bin/sh
 
-DATACTRL="."
+DATACTRL_PATH="."
 # $2 is data received
 
 # output the new tbstate to the correct file
-$DATACTRL_PATH/datctrl "$2" > tbstate
+$DATACTRL_PATH/datactrl "$2" > tbstate

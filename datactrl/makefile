@@ -4,7 +4,7 @@
 EXEC     = datactrl
 CC       = $(CROSS_COMPILE)gcc
 
-CFLAGS   = -Wall -Werror 
+CFLAGS   = -Wall -Werror -std=c11
 
 LDFLAGS  = 
 
