@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 ADDR="90:35:EA:0C:E4:91"
 

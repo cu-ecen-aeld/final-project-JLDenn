@@ -4,6 +4,8 @@ set device [lindex $argv 0];
 
 spawn bluetoothctl
 expect "Agent registered"
+send -- "power on\r"
+expect "power on succeeded"
 send -- "devices Paired\r"
 
 set timeout 1

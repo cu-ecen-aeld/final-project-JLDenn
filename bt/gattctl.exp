@@ -21,19 +21,28 @@ expect "$device"
 
 send -- "char-desc\r"
 set timeout 10
-expect -re "handle: (0x\[0-9a-f]+), uuid: 00000002-38c8-433e-87ec-652a2d136289"  {set handle_btn $expect_out(1,string)}
+expect -re "handle: (0x\[0-9a-f]+), uuid: 00000005-0b94-4bf6-bad5-aa3746ca0907"  {set handle_scan $expect_out(1,string)}
 expect -re "handle: (0x\[0-9a-f]+), uuid: 00002902-0000-1000-8000-00805f9b34fb" {send -- "char-write-req $expect_out(1,string) 02\r" }
 
-send -- "char-desc\r"
-expect -re "handle: (0x\[0-9a-f]+), uuid: 00002a1c-0000-1000-8000-00805f9b34fb" {set handle_temp $expect_out(1,string)}
-expect -re "handle: (0x\[0-9a-f]+), uuid: 00002902-0000-1000-8000-00805f9b34fb" {send -- "char-write-req $expect_out(1,string) 02\r"}		
-
+expect -re "handle: (0x\[0-9a-f]+), uuid: 00000005-0b94-4bf6-bad5-aa3746ca0908" {set handle_tbstate $expect_out(1,string)}
 
 set i 1
+set timeout 600
 while {$i} {
 	expect {
-		-re "Indication   handle = $handle_temp value: (\[0-9a-f ]+)" {system ./data_rcvd.sh temp "\"$expect_out(1,string)\""}
-		-re "Indication   handle = $handle_btn value: (\[0-9a-f ]+)" {system ./data_rcvd.sh btn "$expect_out(1,string)"}
+		-re "Indication   handle = $handle_scan value: (\[0-9a-f ]+)" {
+			system ./data_rcvd.sh scan "\"$expect_out(1,string)\""
+			
+			set fp [open "./tbstate" "r"]
+			set tbstate [read $fp]
+			close $fp
+			
+			set timeout 5
+			send -- "char-write-req $handle_tbstate \"$tbstate\"\r"
+			expect "Characteristic value was written successfully"
+			
+			set timeout 600
+		}
 		"Invalid file descriptor." {set i 0}
 		timeout {set i 0}
 	}
