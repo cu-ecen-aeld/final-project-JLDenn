@@ -33,7 +33,7 @@ typedef struct __attribute__((packed)) {
 
 /////////////////////////////////////////////////////////////////////////////
 static int printUsage(char *argv[]){
-	printf("Usage: %s (scan|add|remove|update) [args unique to command type]\n", argv[0]);
+	printf("Usage: %s (scan|add|remove|update|device) [args unique to command type]\n", argv[0]);
 	return 1;
 }
 
@@ -310,8 +310,10 @@ static int deviceCtrl(int argc, char *argv[]){
 			printf("Service started, and attempting to connect to %02x:%02x:%02x:%02x:%02x:%02x\n",
 					maci[0], maci[1], maci[2], maci[3], maci[4], maci[5]);
 		}
-		else
+		else{
 			printf("BT Service already started, Restart to begin using the new MAC address\n");
+			return 1;
+		}
 		
 	}
 	else if(argc == 1 && !strcmp(cmd, "status")){
