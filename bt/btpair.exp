@@ -21,12 +21,26 @@ expect {
 			timeout {send -- "scan on\r"}
 		}
 		
-		set timeout 60
+		set timeout 0
 		expect "Device $device"
-		send -- "pair $device\r"
-		expect "Confirm passkey" 
-		send -- "yes\r"
-		expect "Pairing successful"
+		
+		
+		while { 1 } {
+		
+			send -- "pair $device\r"
+			set timeout 5
+			expect {
+				"Confirm passkey" { }
+				timeout { continue }
+			}
+			send -- "yes\r"
+			set timeout 30
+			expect {
+				"Pairing successful" { break }
+				"Failed to pair" { continue	}
+				timeout { continue }
+			}
+		}
 		send -- "connect $device\r"
 		expect "Connection successful"
 		send -- "trust $device\r"

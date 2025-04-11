@@ -13,7 +13,7 @@
 #endif
 
 #define TBSTATE_FILE	"/tmp/tbstate"
-#define BTCONN_FILE		"/tmp/tbconn"
+#define BTCONN_FILE		"/tmp/btconn"
 
 
 //#define DEBUG
