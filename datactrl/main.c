@@ -87,6 +87,17 @@ static int scan(int argc, char *argv[]){
 	if(!tools)
 		return 1;
 	
+	//Make the updates to the tools inventory
+	if(te.dir != 0xFF){
+		if(toolsState(tools, te.toolID, te.dir))
+			ERROR("Error updating the tool %u:%u state: %s\n", te.tbID, te.toolID, te.dir ? "IN" : "OUT");
+		else{
+			if(toolsWrite(tools, te.tbID))
+				ERROR("Error saving database file for toolbox %u\n", te.tbID);
+		}
+	}
+	
+	//Now its time to generate the write back to the scanner so it can display tool state
 	tool_t *t = tools;
 	while(t){
 		tbstate.toolTotal++;

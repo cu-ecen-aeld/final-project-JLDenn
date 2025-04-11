@@ -217,6 +217,19 @@ int toolsUpdate(tool_t *tools, uint32_t toolid, uint8_t state, char *toolname){
 }
 
 
+/////////////////////////////////////////////////////////////////////////////////
+int toolsState(tool_t *tools, uint32_t toolid, uint8_t state){
+	while(tools){
+		if(tools->id == toolid){
+			if(state != 0xFF)
+				tools->state = state;
+			return 0;
+		}
+
+		tools = tools->next;
+	}
+	return 1;
+}
 
 /////////////////////////////////////////////////////////////////////////////////
 void toolsFree(tool_t *tools){
@@ -263,3 +276,5 @@ int toolsWrite(tool_t *tools, uint16_t tbid){
 	fclose(fp);
 	return 0;
 }
+
+

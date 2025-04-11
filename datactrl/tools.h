@@ -23,4 +23,6 @@ int toolsWrite(tool_t *tools, uint16_t tbid);
 int toolsRemove(tool_t **tools, uint32_t toolid);
 int toolsUpdate(tool_t *tools, uint32_t toolid, uint8_t state, char *toolname);
 
+int toolsState(tool_t *tools, uint32_t toolid, uint8_t state);
+
 #endif
