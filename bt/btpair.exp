@@ -2,7 +2,7 @@
 
 set device [lindex $argv 0];
 
-spawn bluetoothctl
+spawn /usr/bin/bluetoothctl
 expect "Agent registered"
 send -- "power on\r"
 expect "power on succeeded"

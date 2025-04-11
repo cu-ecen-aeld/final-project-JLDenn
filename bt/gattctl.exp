@@ -2,13 +2,14 @@
 
 set btstat_file "/tmp/btconn"
 set tbstate_file "/tmp/tbstate"
+set datactrl_file "/root/datactrl"
 
 set device [lindex $argv 0];
 set handle_btn 0x0000
 set handle_temp 0x0000
 set timeout 30
 
-spawn gatttool -b $device -I
+spawn /usr/bin/gatttool -b $device -I
 
 # Set the btconn file to "Connecting (1)"
 set fp [open "$btstat_file" w]
@@ -18,11 +19,11 @@ close $fp
 expect "$device"
 send -- "connect\r"
 expect {
-	"Connection successful" {send -- "sec-level high\r"}
-	timeout {
-		send -- "exit\r" 
-		exit 1
-	}
+        "Connection successful" {send -- "sec-level high\r"}
+        timeout {
+                send -- "exit\r"
+                exit 1
+        }
 }
 
 expect "$device"
@@ -42,11 +43,12 @@ close $fp
 set i 1
 set timeout 6000
 while {$i} {
-	expect {
-		-re "Indication   handle = $handle_scan value: (\[0-9a-f ]+)" {
-			system ./datactrl scan "\"$expect_out(1,string)\""
-			
-			set fp [open "$tbstate_file" "r"]
+        expect {
+                -re "Indication   handle = $handle_scan value: (\[0-9a-f ]+)" {
+                        system $datactrl_file scan "\"$expect_out(1,string)\""
+
+                        set fp [open "$tbstate_file" "r"]
+
 			set tbstate [read $fp]
 			close $fp
 			
