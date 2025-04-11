@@ -301,7 +301,7 @@ static int deviceCtrl(int argc, char *argv[]){
 			ERROR("Error openning BT config file: " BT_CFG_FILE "\n");
 			return 1;
 		}
-		fprintf(fp,"ADDR=\"%02x:%02x:%02x:%02x:%02x:%02x\"\n",
+		fprintf(fp,"ADDR=\"%02X:%02X:%02X:%02X:%02X:%02X\"\n",
 			maci[0], maci[1], maci[2], maci[3], maci[4], maci[5]);
 		fclose(fp);
 		
