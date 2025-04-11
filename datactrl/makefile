@@ -11,7 +11,13 @@ LDFLAGS  =
 SRC      = $(wildcard *.c)
 OBJ      = $(SRC:.c=.o)
 
+
+
 all: $(EXEC)
+
+local: CFLAGS += -DLOCAL
+local: $(EXEC)
+
 
 ${EXEC}: $(OBJ)
 		$(CC) -o $@ $^ $(LDFLAGS)
@@ -19,7 +25,7 @@ ${EXEC}: $(OBJ)
 %.o: %.c %.h
 		$(CC) -o $@ -c $< $(CFLAGS)
 
-.PHONY: clean
+.PHONY: clean local
 
 clean:
 		@rm -rf *.o ${EXEC}

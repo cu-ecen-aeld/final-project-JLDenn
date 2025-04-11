@@ -2,11 +2,14 @@
 #include <stdint.h>
 #include <string.h>
 #include "csv.h"
+#include "app.h"
+#include "tools.h"
+
 
 
 
 typedef struct __attribute__((packed)) {
-	uint16_t tbID;
+	uint16_t id;
 	uint32_t toolTotal;
 	uint32_t toolOut;
 	char toolName[];		//Max toolName = 16 bytes (no NULL)
@@ -19,32 +22,15 @@ typedef struct __attribute__((packed)) {
 	uint32_t toolID;
 }toolEvent_t;
 
-#define DB_ROOT			"../database/" 	//"/root/database/"
-#define TBSTATE_FILE	"../database/tbstate" 		//"/root/tbstate"
 
-typedef struct {
-	int row;
-	int col;
-	tbstate_t *tbState;
-	
-	uint32_t toolID;
-	uint8_t state;
-	char name[128];
-	char *toolOutName;
-}parseHelp_t;
 
-#define COL_TID		0
-#define COL_STATE	1
-#define COL_NAME	2
 
-#define DEBUG
 
-#ifdef DEBUG
-#define INFO(fmt, ...) \
-        printf("%s:%d:%s(): " fmt, __FILE__, __LINE__, __func__, ##__VA_ARGS__)
-#else
-#define INFO(a, ...) {}
-#endif
+/////////////////////////////////////////////////////////////////////////////
+static int printUsage(char *argv[]){
+	printf("Usage: %s (scan|add|remove|update) [args unique to command type]\n", argv[0]);
+	return 1;
+}
 
 //////////////////////////////////////////////////////////////////////////////
 // Read input data in the form "34 6A 22 5F" into input buffer (capped at size)
@@ -52,7 +38,7 @@ typedef struct {
 //	No format checking is performed... 
 //
 //	Returns the number of bytes in input, or 0 for error/invalid input.
-static int readInputData(char *inp, unsigned char *input, unsigned int size){
+static int readInputBytes(char *inp, unsigned char *input, unsigned int size){
 	
 	if(!inp)
 		return 0;
@@ -77,46 +63,180 @@ static int readInputData(char *inp, unsigned char *input, unsigned int size){
 	return len;
 }
 
-//handle a new field
-static void cb1(void *field, size_t size, void *arg){
+
 	
-	parseHelp_t *ph = arg;
-	//printf("Field (%i, %i): %s\n", ph->row, ph->col, (char*)field);	
+
+
+/////////////////////////////////////////////////////////////////////////////
+static int scan(int argc, char *argv[]){
 	
-	switch(ph->col){
-	case COL_TID:
-		ph->toolID = atol(field);
-		break;
-	case COL_STATE:
-		ph->state = 0;
-		if(!strcmp(field, "IN"))
-			ph->state = 1;
-		break;
-	case COL_NAME:
-		strncpy(ph->name, field, sizeof(ph->name));
-		ph->name[sizeof(ph->name)-1] = '\0';
-		break;
+	tbstate_t tbstate = {0};
+	char toolName[MAX_TOOL_NAME+1] = "";
+
+	toolEvent_t te;
+	
+	int len = readInputBytes(argv[0], (unsigned char*)&te, sizeof(te));
+	if(len != sizeof(toolEvent_t)){
+		ERROR("Invalid toolEvent packet received, len = %i\n", len);
+		return 1;
 	}
+
+	tbstate.id = te.tbID;
 	
-	ph->col++;
+	tool_t *tools = toolsLoad(te.tbID);
+	if(!tools)
+		return 1;
+	
+	tool_t *t = tools;
+	while(t){
+		tbstate.toolTotal++;
+		
+		if(!t->state){
+			tbstate.toolOut++;
+			strncpy(toolName, t->name, sizeof(toolName));
+		}
+		
+		t = t->next;
+	}
+
+	toolsFree(tools);
+
+	INFO("Toolbox ID: %u, Tools total: %u, Number out: %u. Toolname: \"%s\"\n", tbstate.id, tbstate.toolTotal, tbstate.toolOut, toolName);
+	
+	FILE *fp = fopen(TBSTATE_FILE, "w");
+	for(int i=0;i<sizeof(tbstate_t);i++)
+		fprintf(fp, "%02x", ((char*)&tbstate)[i]);
+	
+	for(int i=0;i<strlen(toolName);i++)
+		fprintf(fp, "%02x", toolName[i]);
+	
+	return 0;
 }
 
-//Handle end of record (or end of parsing)
-static void cb2(int chr, void *arg){
+/////////////////////////////////////////////////////////////////////////////
+static int addTool(int argc, char *argv[]){
 	
-	parseHelp_t *ph = arg;
-	
-	
-	ph->tbState->toolTotal++;
-	if(!ph->state){
-		ph->tbState->toolOut++;
-		strncpy(ph->toolOutName, ph->name, MAX_TOOL_NAME);
-		ph->toolOutName[MAX_TOOL_NAME] = '\0'; //Ensure we have a NULL character. 
+	if(argc != 3){
+		ERROR("usage: - add <toolbox id> <tool id> <tool name>\n");
+		return 1;
 	}
 	
+	long tbid = atol(argv[0]);
+	long toolid = atol(argv[1]);
+	char *toolname = argv[2];
 	
-	ph->col = 0;
-	ph->row++;
+	
+	tool_t *tools = toolsLoad(tbid);
+	if(!tools)
+		return 1;
+	
+	
+	if(toolsAdd(tools, toolid, 0, toolname)){	//Default to out since they are added at the computer, not the toolbox
+		ERROR("Error adding tool to chain\n");
+		toolsFree(tools);
+		return 1;
+	}
+		
+	
+	int res = toolsWrite(tools, tbid);
+	toolsFree(tools);
+	if(res)
+		return 1;
+	
+	return 0;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+static int removeTool(int argc, char *argv[]){
+	
+	if(argc != 2){
+		ERROR("usage: - remove <toolbox id> <tool id>\n");
+		return 1;
+	}
+	long tbid = atol(argv[0]);
+	long toolid = atol(argv[1]);
+	
+	tool_t *tools = toolsLoad(tbid);
+	if(!tools)
+		return 1;
+
+	if(toolsRemove(&tools, toolid)){
+		ERROR("Error removing tool %li from inventory\n", toolid);
+		toolsFree(tools);
+		return 1;
+	}
+	
+	int res = toolsWrite(tools, tbid);
+	toolsFree(tools);
+	if(res)
+		return 1;
+	
+	return 0;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+static int updateTool(int argc, char *argv[]){
+	
+	if(argc != 3 && argc != 4){
+		ERROR("usage: - update <toolbox id> <tool id> <tool name> [OUT|IN]\n");
+		return 1;
+	}
+	long tbid = atol(argv[0]);
+	long toolid = atol(argv[1]);
+	char *toolname = argv[2];
+	uint8_t state = 0xFF;
+	if(argc == 4){
+		if(!strcmp("IN", argv[3]))
+			state = 1;
+		else if(!strcmp("OUT", argv[3]))
+			state = 0;
+		else{
+			ERROR("Invalid state\n");
+			return 1;
+		}
+	}
+	
+	tool_t *tools = toolsLoad(tbid);
+	if(!tools)
+		return 1;
+
+	if(toolsUpdate(tools, toolid, state, toolname)){
+		ERROR("Error updating tool %li inventory\n", toolid);
+		toolsFree(tools);
+		return 1;
+	}
+	
+	int res = toolsWrite(tools, tbid);
+	toolsFree(tools);
+	if(res)
+		return 1;
+	
+	return 0;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+static int listTools(int argc, char *argv[]){
+	
+	if(argc != 1){
+		ERROR("usage: - list <toolbox id>\n");
+		return 1;
+	}
+	
+	long tbid = atol(argv[0]);
+	
+	tool_t *tools = toolsLoad(tbid);
+	if(!tools)
+		return 1;
+	
+	
+	printf("------ Tools in toolbox %li ------\n", tbid);
+	while(tools){
+		printf("%8u | %3s | %s\n", tools->id, tools->state ? "IN" : "OUT", tools->name);
+		tools = tools->next;
+	}
+	
+	return 0;	
+	
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -124,87 +244,32 @@ static void cb2(int chr, void *arg){
 /////////////////////////////////////////////////////////////////////////////
 int main(int argc, char *argv[]){
 	
-	//Output state for our toolbox inventory
-	tbstate_t state = {0};
-	char toolName[MAX_TOOL_NAME+1] = "";
+	if(argc < 2)
+		return printUsage(argv);
+	
+	
+	if(!strcmp("scan", argv[1])){
+		if(argc != 3)
+			return printUsage(argv);
 
-	unsigned char input[16];
-	int len = 0;
-	if(argc == 2)
-		len = readInputData(argv[1], input, sizeof(input));
-
-	if(len != sizeof(toolEvent_t)){
-		INFO("Invalid toolEvent packet received, len = %i\n", len);
-		len = 0;
+		return scan(argc-2, &argv[2]);
+	}
+	else if(!strcmp("add", argv[1])){
+		return addTool(argc-2, &argv[2]);
+	}
+	else if(!strcmp("remove", argv[1])){
+		return removeTool(argc-2, &argv[2]);
+	}
+	else if(!strcmp("update", argv[1])){
+		return updateTool(argc-2, &argv[2]);
+	}
+	else if(!strcmp("list", argv[1])){
+		return listTools(argc-2, &argv[2]);
 	}
 	else{
-		toolEvent_t *te = (toolEvent_t*)input;
-		state.tbID = te->tbID;
-		char filename[64];	//We know this is big enough since we're controlling the paths
-		snprintf(filename, sizeof(filename), DB_ROOT "%i", te->tbID);
-		
-		INFO("Toolbox filename: %s\n", filename);
-		
-		struct csv_parser p;
-		if(csv_init(&p, CSV_APPEND_NULL)){
-			printf("Error initializing csv\n");
-			return 1;
-		}
-	
-		INFO("Init succeeded\n");
-	
-		//Read in the correct database file
-		FILE *fp = fopen(filename, "r");
-		if(!fp){
-			printf("Error opening %s\n", filename);
-			return 1;
-		}
-		
-		fseek(fp, 0, SEEK_END);
-		long size = ftell(fp);
-		fseek(fp, 0, SEEK_SET);
-		
-		INFO("Allocating %li bytes\n", size);
-		
-		char *csvmem = malloc(size);
-		if(!csvmem){
-			perror("malloc");
-			return 1;
-		}
-		
-		INFO("Memory allocated\n");
-		
-		if(size != fread(csvmem, 1, size, fp)){
-			perror("fread");
-			return 1;
-		}
-		fclose(fp);
-	
-		INFO("Parsing\n");
-	
-		//Create and initialize the parseHelp_t so we can track the tools total, out and one of the names
-		parseHelp_t ph = {.row = 0, .col = 0, .tbState = &state, .toolOutName = toolName};
-	
-		//Now that the toolbox inventory is in memory, we'll parse the csv file
-		if(size != csv_parse(&p, csvmem, size, cb1, cb2, (void*) &ph)){
-			printf("Error parsing csv file %s\n", filename);
-			return 1;
-		}
-		
-		printf("Finishing\n");
-		if(csv_fini(&p, cb1, cb2, (void*) &ph)){
-			printf("Error during csv_fini\n");
-		}
-		
+		ERROR("Invalid command: %s\n", argv[1]);
+		return printUsage(argv);
 	}
-
 	
-	FILE *fp = fopen(TBSTATE_FILE, "w");
-	for(int i=0;i<sizeof(tbstate_t);i++)
-		fprintf(fp, "%02x", ((char*)&state)[i]);
-	
-	for(int i=0;i<strlen(toolName);i++)
-		fprintf(fp, "%02x", toolName[i]);
-	
-	return 0;
+	return 1;
 }
