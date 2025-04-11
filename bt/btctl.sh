@@ -1,6 +1,10 @@
 #!/bin/sh
 
-source bt.conf
+PATH=`dirname $0`
+if ! test -f "$PATH/bt.conf"; then
+	exit 1;
+fi 
+source "$PATH/bt.conf"
 
 trap printout SIGINT
 printout() {
