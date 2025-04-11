@@ -31,9 +31,9 @@ set timeout 600
 while {$i} {
 	expect {
 		-re "Indication   handle = $handle_scan value: (\[0-9a-f ]+)" {
-			system ./data_rcvd.sh scan "\"$expect_out(1,string)\""
+			system ./datactrl scan "\"$expect_out(1,string)\""
 			
-			set fp [open "./tbstate" "r"]
+			set fp [open "/tmp/tbstate" "r"]
 			set tbstate [read $fp]
 			close $fp
 			

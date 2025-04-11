@@ -6,11 +6,11 @@
 
 #ifdef LOCAL
 #define DB_ROOT			"../database/"
-#define TBSTATE_FILE	"../database/tbstate"
 #else
 #define DB_ROOT			"/root/database/"
-#define TBSTATE_FILE	"/root/tbstate"
 #endif
+
+#define TBSTATE_FILE	"/tmp/tbstate"
 
 
 //#define DEBUG
