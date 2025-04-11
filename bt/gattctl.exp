@@ -1,11 +1,19 @@
 #!/usr/bin/expect -f
 
+set btstat_file "/tmp/btconn"
+set tbstate_file "/tmp/tbstate"
+
 set device [lindex $argv 0];
 set handle_btn 0x0000
 set handle_temp 0x0000
 set timeout 30
 
 spawn gatttool -b $device -I
+
+# Set the btconn file to "Connecting (1)"
+set fp [open "$btstat_file" w]
+puts $fp "1"
+close &fp
 
 expect "$device"
 send -- "connect\r"
@@ -20,20 +28,25 @@ expect {
 expect "$device"
 
 send -- "char-desc\r"
-set timeout 10
+set timeout 20
 expect -re "handle: (0x\[0-9a-f]+), uuid: 00000005-0b94-4bf6-bad5-aa3746ca0907"  {set handle_scan $expect_out(1,string)}
 expect -re "handle: (0x\[0-9a-f]+), uuid: 00002902-0000-1000-8000-00805f9b34fb" {send -- "char-write-req $expect_out(1,string) 02\r" }
 
 expect -re "handle: (0x\[0-9a-f]+), uuid: 00000005-0b94-4bf6-bad5-aa3746ca0908" {set handle_tbstate $expect_out(1,string)}
 
+#set the btconn state to "Connected (2)"
+set fp [open "$btstat_file" w]
+puts $fp "2"
+close &fp
+
 set i 1
-set timeout 600
+set timeout 6000
 while {$i} {
 	expect {
 		-re "Indication   handle = $handle_scan value: (\[0-9a-f ]+)" {
 			system ./datactrl scan "\"$expect_out(1,string)\""
 			
-			set fp [open "/tmp/tbstate" "r"]
+			set fp [open "$tbstate_file" "r"]
 			set tbstate [read $fp]
 			close $fp
 			
@@ -43,8 +56,22 @@ while {$i} {
 			
 			set timeout 600
 		}
-		"Invalid file descriptor." {set i 0}
-		timeout {set i 0}
+		"Invalid file descriptor." {
+			#set the btconn state to "Disconnected (0)"
+			set fp [open "$btstat_file" w]
+			puts $fp "0"
+			close &fp
+			
+			set i 0
+		}
+		timeout {
+			#set the btconn state to "Disconnected (0)"
+			set fp [open "$btstat_file" w]
+			puts $fp "0"
+			close &fp
+			
+			set i 0
+		}
 	}
 }
 

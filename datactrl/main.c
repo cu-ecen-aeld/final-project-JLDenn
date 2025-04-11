@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
+#include <stdlib.h>
 #include "csv.h"
 #include "app.h"
 #include "tools.h"
@@ -23,7 +24,11 @@ typedef struct __attribute__((packed)) {
 }toolEvent_t;
 
 
-
+#define BTCONN_STATE_UNK		0
+#define BTCONN_STATE_NOTSTARTED	1
+#define BTCONN_STATE_DIS		2
+#define BTCONN_STATE_CONNECTING	3
+#define BTCONN_STATE_CONNECTED	4
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -250,6 +255,93 @@ static int listTools(int argc, char *argv[]){
 	
 }
 
+/////////////////////////////////////////////////
+static int _getBTConnState(){
+	FILE *fp = fopen(BTCONN_FILE, "r");
+	if(!fp)
+		return BTCONN_STATE_NOTSTARTED;
+	
+	int c = fgetc(fp);
+	fclose(fp);
+	
+	if(c == '0')
+		return BTCONN_STATE_DIS;
+	
+	if(c == '1')
+		return BTCONN_STATE_CONNECTING;
+	
+	if(c == '2')
+		return BTCONN_STATE_CONNECTED;
+	
+	return BTCONN_STATE_UNK;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+static int deviceCtrl(int argc, char *argv[]){
+	
+	char *cmd = argv[0];
+	if(argc == 2 && !strcmp(cmd, "connect")){
+		//Check the mac format:
+		char *mac = argv[1];
+		int maci[6];
+		if(6 != sscanf(mac, "%x:%x:%x:%x:%x:%x", 
+				&maci[0], &maci[1], &maci[2],
+				&maci[3], &maci[4], &maci[5])){
+		
+			//invalid mac format
+			ERROR("Invalid mac address format\n");
+			ERROR("usage: - device connect <MAC (fmt: 00:00:00:00:00:00)>\n");
+			return 1;
+		}
+		
+		//MAC is in the correct format. 
+		//Update the config file @ /root/bt.conf
+		FILE *fp = fopen(BT_CFG_FILE, "w");
+		if(!fp){
+			ERROR("Error openning BT config file: " BT_CFG_FILE "\n");
+			return 1;
+		}
+		fprintf(fp,"ADDR=\"%02x:%02x:%02x:%02x:%02x:%02x\"\n",
+			maci[0], maci[1], maci[2], maci[3], maci[4], maci[5]);
+		fclose(fp);
+		
+		if(_getBTConnState() == BTCONN_STATE_NOTSTARTED){
+			system("start-stop-daemon -S -n btctl.sh -x /root/btctl.sh -b");
+			printf("Service started, and attempting to connect to %02x:%02x:%02x:%02x:%02x:%02x\n",
+					maci[0], maci[1], maci[2], maci[3], maci[4], maci[5]);
+		}
+		else
+			printf("BT Service already started, Restart to begin using the new MAC address\n");
+		
+	}
+	else if(argc == 1 && !strcmp(cmd, "status")){
+		switch(_getBTConnState()){
+		case BTCONN_STATE_CONNECTING:
+			printf("Connecting\n");
+			break;
+		case BTCONN_STATE_CONNECTED:
+			printf("Connected\n");
+			break;
+		case BTCONN_STATE_DIS:
+		case BTCONN_STATE_NOTSTARTED:
+			printf("Disconnected\n");
+			break;
+		case BTCONN_STATE_UNK:
+			printf("Unknown\n");
+			break;	
+		}			
+
+	}
+	else {
+		ERROR("usage: - device connect <MAC (fmt: 00:00:00:00:00:00)>\n");
+		ERROR("usage: - device status\n");
+		return 1;
+	}
+	
+
+	return 0;	
+}
+
 /////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////
@@ -276,6 +368,9 @@ int main(int argc, char *argv[]){
 	}
 	else if(!strcmp("list", argv[1])){
 		return listTools(argc-2, &argv[2]);
+	}
+	else if(!strcmp("device", argv[1])){
+		return deviceCtrl(argc-2, &argv[2]);
 	}
 	else{
 		ERROR("Invalid command: %s\n", argv[1]);

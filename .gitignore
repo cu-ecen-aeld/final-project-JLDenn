@@ -1,6 +1,7 @@
 *.o
 
 bt/*.txt
+bt/bt.conf
 
 datactrl/datactrl
 database

@@ -1,6 +1,6 @@
 #!/bin/sh
 
-ADDR="90:35:EA:0C:E4:91"
+source bt.conf
 
 trap printout SIGINT
 printout() {
@@ -9,6 +9,8 @@ printout() {
     exit
 }
 
+#indicate we've started
+echo "0" > /tmp/btconn
 
 /usr/bin/expect btpair.exp $ADDR
 
