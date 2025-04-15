@@ -1,0 +1,55 @@
+#!/bin/sh
+#
+#       This script will pull the tool states from the "database" and returns a JSON object with all the tool states.
+#
+read line
+
+if [[ ! -z "$line" ]]; then
+	#we're processing an action
+	
+
+	
+	if [[ "$line" == *"action=connect"* ]]; then
+	
+		mac=""
+		for par in ${line//&/ }; do
+			if [[ "$par" == "mac="* ]]; then
+				mac=${par:4}
+			fi
+		done
+	
+		if [ -n "$mac" ]; then
+			mac="${mac//%3A/:}"		#convert the %3A to :
+			resp=`/root/datactrl device connect $mac`
+
+			if [ $? != 0 ]; then
+				resp="$resp ... You Entered: $mac"
+				resp="${resp//</&lt}"
+				resp="${resp//>/&gt}"
+			
+				echo "Content-Type: text/html; charset=utf-8"
+				echo
+				echo "<pre><code>Error: $resp</code></pre>"
+				exit 1
+			fi
+			
+			
+		fi
+		
+	elif [[ "$line" == *"action=status"* ]]; then
+		echo "Content-Type: text"
+		echo
+		/root/datactrl device status
+		exit 0
+	fi
+	
+	echo "Content-Type: text/html; charset=utf-8"
+	echo
+	echo "<html><head><meta http-equiv=\"refresh\" content=\"0; url=/index.html\"/></head></html>"
+else
+	echo "Content-type: application/json"
+	echo
+	/root/datactrl list 90
+fi
+
+

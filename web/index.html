@@ -1,0 +1,48 @@
+<html>
+
+
+<script>
+function load() {
+	setInterval(function(){
+
+		var xhttp = new XMLHttpRequest();
+		xhttp.onreadystatechange = function() {
+		if (this.readyState == 4 && this.status == 200) {
+				document.getElementById("content").innerHTML = this.responseText;
+		}};
+		xhttp.open("GET", "/cgi-bin/tools", true);
+		xhttp.send();
+		
+		
+		xhttp_stat = new XMLHttpRequest();
+		xhttp_stat.onreadystatechange = function() {
+		if (this.readyState == 4 && this.status == 200) {
+				document.getElementById("connection").innerHTML = this.responseText;
+		}};
+		xhttp_stat.open("POST", "/cgi-bin/tools", true);
+		xhttp_stat.send("action=status");
+
+	}, 1000);
+}
+</script>
+
+<body onload="load()">
+<h1>Toolbox Inventory Control</h1>
+
+<h3>Scanner connection:</h3>
+<div style="font-weight: bold" id="connection">Unknown</div><br><br>
+
+
+<h3>Set BLE Toolbox Scanner MAC</h3>
+<form action="/cgi-bin/tools" method=POST>
+<input type="hidden" name="action" value="connect" />
+<input name="mac" placeholder="01:45:78:ab:cd:ef" />
+<input type="submit" value="Connect" />
+</form>
+
+
+<h3>Current tool inventory:</h3>
+<pre><code id="content"></code></pre>
+
+</body>
+</html>
