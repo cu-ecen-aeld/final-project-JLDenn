@@ -22,9 +22,18 @@ function load() {
 			url: "/cgi-bin/tools",
 			//data: "action=loadall&id=" + id,
 			complete: function(data) {
-				var json = $.parseJSON(data);
-			
-				$('#content').html(json.toolbox);
+				var json = $.parseJSON(data.responseText);
+				
+				$('#tbname').html("Toolbox " + json.toolbox);
+				
+				var out = "<thead><tr><th scope='col'>ID</th><th scope='col'>Name</th><th scope='col'>State</th></tr></thead><tbody>";
+				
+				$.each(json.tools, function(key, item){
+					out += "<tr><th scope='row'>T" + ("00" + item.id).slice(-3) + "</th><td>" + item.name + "</td><td>" + item.state + "</td><tr>";
+				});
+				
+				out += "</tbody>";
+				$('#content').html(out);
 			}
 		});
 		
@@ -50,26 +59,27 @@ function load() {
 
 
 <h3>Set BLE Toolbox Scanner MAC</h3>
-<form action="/cgi-bin/tools" method=POST>
-<input type="hidden" name="action" value="connect" />
-<input name="mac" placeholder="01:45:78:ab:cd:ef" />
-<input type="submit" value="Connect" />
+<form action="/cgi-bin/tools" class="row justify-content-center" method=POST>
+	<input type="hidden" name="action" value="connect" />
+	<div class="col-2">
+	<input name="mac" class="form-control" placeholder="01:45:78:ab:cd:ef" />
+	</div>
+	
+<div class="form-group">	
+	<input type="submit" class="btn btn-primary" value="Connect" />
+</div>
 </form>
 
-</br>
-<h3>Current Tool Inventory:</h3>
-<pre><code id="content"></code></pre>
-
-
+<br>
 <h3>Update Inventory</h3>
 <div class="row">
-	<div class="col-2"></div>
-	<div class="col-8">
+	<div class="col-3"></div>
+	<div class="col-6">
 		<form class="text-center" action="/cgi-bin/tools" method="POST">
 		<div class="form-group">
 			<div class="input-group">
 				<label class="control-label col-sm-3" for="tid">Tool ID</label>
-				<div class="col-sm-5">
+				<div class="col-sm-3">
 					<input id="tid" class="form-control" name="tid" placeholder="T###" />
 				</div>
 				&nbsp;(Req'd for add/update/remove)
@@ -79,7 +89,7 @@ function load() {
 			<input type="hidden" name="tbid" value="90" />
 			<div class="input-group">
 				<label class="control-label col-sm-3" for="tbid">Toolbox</label>
-				<div class="col-sm-5">
+				<div class="col-sm-3">
 					<input id="tbid" name="tbid" class="form-control" value="90" disabled />
 				</div>
 				
@@ -88,7 +98,7 @@ function load() {
 		<div class="form-group">
 			<div class="input-group">
 				<label class="control-label col-sm-3" for="tname">Tool Name</label>
-				<div class="col-sm-5">
+				<div class="col-sm-3">
 					<input id="tname" name="tname" class="form-control" placeholder="3/8 Wrench" />
 				</div>
 				&nbsp;(Req'd for update/add)
@@ -105,6 +115,24 @@ function load() {
 		</form>
 	</div>
 </div>
+
+
+</br>
+<h3>Current Tool Inventory:</h3>
+<h4 id="tbname"></h4>
+<div class="row">
+<div class="col-sm-3"></div>
+<div class="col-sm-6">
+<table id="content" class="table">
+  <thead>
+	<tr><th scope='col'>ID</th><th scope='col'>Name</th><th scope='col'>State</th></tr>
+  </thead>
+  <tbody></tbody>
+</table>
+</div>
+</div>
+
+
 
 </body>
 </html>
