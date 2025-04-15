@@ -1,17 +1,32 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
 
+<link href="/css/bootstrap.min.css" rel="stylesheet">
+<script src="/js/jquery-3.7.1.min.js" ></script>
+
+<style>
+
+.form-group {
+	margin-top: 0.5em;
+}
+
+</style>
 
 <script>
 function load() {
 	setInterval(function(){
 
-		var xhttp = new XMLHttpRequest();
-		xhttp.onreadystatechange = function() {
-		if (this.readyState == 4 && this.status == 200) {
-				document.getElementById("content").innerHTML = this.responseText;
-		}};
-		xhttp.open("GET", "/cgi-bin/tools", true);
-		xhttp.send();
+		$.ajax({
+			type: "POST",
+			dataType: "json",
+			url: "/cgi-bin/tools",
+			//data: "action=loadall&id=" + id,
+			complete: function(data) {
+				var json = $.parseJSON(data);
+			
+				$('#content').html(json.toolbox);
+			}
+		});
 		
 		
 		xhttp_stat = new XMLHttpRequest();
@@ -27,6 +42,7 @@ function load() {
 </script>
 
 <body onload="load()">
+<div class="container text-center">
 <h1>Toolbox Inventory Control</h1>
 
 <h3>Scanner connection:</h3>
@@ -40,9 +56,55 @@ function load() {
 <input type="submit" value="Connect" />
 </form>
 
-
-<h3>Current tool inventory:</h3>
+</br>
+<h3>Current Tool Inventory:</h3>
 <pre><code id="content"></code></pre>
+
+
+<h3>Update Inventory</h3>
+<div class="row">
+	<div class="col-2"></div>
+	<div class="col-8">
+		<form class="text-center" action="/cgi-bin/tools" method="POST">
+		<div class="form-group">
+			<div class="input-group">
+				<label class="control-label col-sm-3" for="tid">Tool ID</label>
+				<div class="col-sm-5">
+					<input id="tid" class="form-control" name="tid" placeholder="T###" />
+				</div>
+				&nbsp;(Req'd for add/update/remove)
+			</div>
+		</div>
+		<div class="form-group">
+			<input type="hidden" name="tbid" value="90" />
+			<div class="input-group">
+				<label class="control-label col-sm-3" for="tbid">Toolbox</label>
+				<div class="col-sm-5">
+					<input id="tbid" name="tbid" class="form-control" value="90" disabled />
+				</div>
+				
+			</div>
+		</div>
+		<div class="form-group">
+			<div class="input-group">
+				<label class="control-label col-sm-3" for="tname">Tool Name</label>
+				<div class="col-sm-5">
+					<input id="tname" name="tname" class="form-control" placeholder="3/8 Wrench" />
+				</div>
+				&nbsp;(Req'd for update/add)
+			</div>
+		</div>
+
+		<div class="form-group">
+		
+		
+		<button type="submit" class="btn btn-primary" name="action" value="add">Add</button>
+		<button type="submit" class="btn btn-primary" name="action" value="update">Update</button>
+		<button type="submit" class="btn btn-primary" name="action" value="remove">Remove</button>
+		</div>
+		</form>
+	</div>
+</div>
 
 </body>
 </html>

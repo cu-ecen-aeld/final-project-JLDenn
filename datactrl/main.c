@@ -245,11 +245,25 @@ static int listTools(int argc, char *argv[]){
 		return 1;
 	
 	
-	printf("------ Tools in toolbox %li ------\n", tbid);
+	// printf("------ Tools in toolbox %li ------\n", tbid);
+	// while(tools){
+		// printf("%8u | %3s | %s\n", tools->id, tools->state ? "IN" : "OUT", tools->name);
+		// tools = tools->next;
+	// }
+	
+	//Output JSON format
+	printf("{\"toolbox\" : %li, \"tools\" : [ ", tbid);
 	while(tools){
-		printf("%8u | %3s | %s\n", tools->id, tools->state ? "IN" : "OUT", tools->name);
+		printf("{\"id\" : %u, \"state\" : \"%s\", \"name\" : \"%s\"}", tools->id, tools->state ? "IN" : "OUT", tools->name);
+		
 		tools = tools->next;
+		
+		if(tools)
+			printf(",");
 	}
+	
+	printf("]}\n");
+	
 	
 	return 0;	
 	

@@ -4,11 +4,21 @@
 #
 read line
 
+function err_resp() {
+	resp="${1//</&lt}"
+	resp="${resp//>/&gt}"
+
+	echo "Content-Type: text/html; charset=utf-8"
+	echo
+	echo "<pre><code>Error: $resp</code></pre>"
+	
+
+}
+
 if [[ ! -z "$line" ]]; then
 	#we're processing an action
 	
-
-	
+	#perform connection to BLE device
 	if [[ "$line" == *"action=connect"* ]]; then
 	
 		mac=""
@@ -35,12 +45,80 @@ if [[ ! -z "$line" ]]; then
 			
 			
 		fi
-		
+	
+	#Get the BLE connection status
 	elif [[ "$line" == *"action=status"* ]]; then
 		echo "Content-Type: text"
 		echo
 		/root/datactrl device status
 		exit 0
+		
+	#add tool
+	elif [[ "$line" == *"action=add"* ]]; then
+		
+		tid=""
+		tbid=""
+		tname=""
+		for par in ${line//&/ }; do
+			if [[ "$par" == "tid="* ]]; then
+				tid=$(echo ${par:4} | sed 's@+@ @g;s@%@\\x@g' | xargs -0 printf "%b")
+			elif [[ "$par" == "tbid="* ]]; then
+				tbid=$(echo ${par:5} | sed 's@+@ @g;s@%@\\x@g' | xargs -0 printf "%b")
+			elif [[ "$par" == "tname="* ]]; then
+				tname=$(echo ${par:6} | sed 's@+@ @g;s@%@\\x@g' | xargs -0 printf "%b")
+			fi
+		done
+		
+		
+		resp=`/root/datactrl add "$tbid" "${tid:1}" "$tname"`
+		if [ $? != 0 ]; then
+			err_resp "$resp"
+			exit 1
+		fi
+		
+	#update tool
+	elif [[ "$line" == *"action=update"* ]]; then
+
+		tid=""
+		tbid=""
+		tname=""
+		for par in ${line//&/ }; do
+			if [[ "$par" == "tid="* ]]; then
+				tid=$(echo ${par:4} | sed 's@+@ @g;s@%@\\x@g' | xargs -0 printf "%b")
+			elif [[ "$par" == "tbid="* ]]; then
+				tbid=$(echo ${par:5} | sed 's@+@ @g;s@%@\\x@g' | xargs -0 printf "%b")
+			elif [[ "$par" == "tname="* ]]; then
+				tname=$(echo ${par:6} | sed 's@+@ @g;s@%@\\x@g' | xargs -0 printf "%b")
+			fi
+		done
+		
+		
+		resp=`/root/datactrl update "$tbid" "${tid:1}" "$tname"`
+		if [ $? != 0 ]; then
+			err_resp "$resp"
+			exit 1
+		fi
+
+	#remove tool
+	elif [[ "$line" == *"action=remove"* ]]; then
+
+		tid=""
+		tbid=""
+		for par in ${line//&/ }; do
+			if [[ "$par" == "tid="* ]]; then
+				tid=$(echo ${par:4} | sed 's@+@ @g;s@%@\\x@g' | xargs -0 printf "%b")
+			elif [[ "$par" == "tbid="* ]]; then
+				tbid=$(echo ${par:5} | sed 's@+@ @g;s@%@\\x@g' | xargs -0 printf "%b")
+			fi
+		done
+		
+		
+		resp=`/root/datactrl remove "$tbid" "${tid:1}"`
+		if [ $? != 0 ]; then
+			err_resp "$resp"
+			exit 1
+		fi
+		
 	fi
 	
 	echo "Content-Type: text/html; charset=utf-8"
