@@ -16,12 +16,12 @@ printout() {
 #indicate we've started
 echo "0" > /tmp/btconn
 
-echo "Starting $PATH/btpair.exp" >> /var/log/cp.log
+echo "Starting $PATH/btpair.exp" >> /var/log/btctl.log
 /usr/bin/expect "$PATH/btpair.exp" $ADDR
 
 while [[ 1 ]]
 do
 	/usr/bin/expect "$PATH/gattctl.exp" $ADDR
-	echo "retrying $PATH/gattctl.exp" >> /var/log/cp.log
+	echo "retrying $PATH/gattctl.exp" >> /var/log/btctl.log
 done
 
