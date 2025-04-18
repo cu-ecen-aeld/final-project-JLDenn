@@ -2,6 +2,8 @@
 
 set device [lindex $argv 0];
 
+set btstat_file "/tmp/btconn"
+
 spawn /usr/bin/bluetoothctl
 expect "Agent registered"
 send -- "power on\r"
@@ -30,13 +32,23 @@ expect {
 			send -- "pair $device\r"
 			set timeout 5
 			expect {
-				"Confirm passkey" { }
+				-re "Confirm passkey (\[0-9]+)" { 
+					set fp [open "$btstat_file" w]
+					puts $fp "p\"$expect_out(1,string)\""
+					close $fp 
+				}
 				timeout { continue }
 			}
 			send -- "yes\r"
 			set timeout 30
 			expect {
-				"Pairing successful" { break }
+				"Pairing successful" { 
+					#set the btconn state to "Connecting (1)", to remove the passkey.
+					set fp [open "$btstat_file" w]
+					puts $fp "1"
+					close $fp
+					break 
+				}
 				"Failed to pair" { continue	}
 				timeout { continue }
 			}

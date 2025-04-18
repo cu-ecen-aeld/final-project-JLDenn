@@ -28,8 +28,10 @@ typedef struct __attribute__((packed)) {
 #define BTCONN_STATE_NOTSTARTED	1
 #define BTCONN_STATE_DIS		2
 #define BTCONN_STATE_CONNECTING	3
-#define BTCONN_STATE_CONNECTED	4
+#define BTCONN_STATE_PASSKEY	4
+#define BTCONN_STATE_CONNECTED	5
 
+static char passkey[7] = {0};
 
 /////////////////////////////////////////////////////////////////////////////
 static int printUsage(char *argv[]){
@@ -276,6 +278,13 @@ static int _getBTConnState(){
 		return BTCONN_STATE_NOTSTARTED;
 	
 	int c = fgetc(fp);
+	if(c == 'p'){
+		for(int i=0;i<6;i++)
+			passkey[i] = fgetc(fp);
+		fclose(fp);
+		return BTCONN_STATE_PASSKEY;
+	}
+	
 	fclose(fp);
 	
 	if(c == '0')
@@ -286,7 +295,7 @@ static int _getBTConnState(){
 	
 	if(c == '2')
 		return BTCONN_STATE_CONNECTED;
-	
+
 	return BTCONN_STATE_UNK;
 }
 
@@ -342,6 +351,9 @@ static int deviceCtrl(int argc, char *argv[]){
 		case BTCONN_STATE_NOTSTARTED:
 			printf("Disconnected\n");
 			break;
+		case BTCONN_STATE_PASSKEY:
+			printf("Connecting (Passkey: %s)\n",passkey);
+			break;
 		case BTCONN_STATE_UNK:
 			printf("Unknown\n");
 			break;	
@@ -357,6 +369,8 @@ static int deviceCtrl(int argc, char *argv[]){
 
 	return 0;	
 }
+
+
 
 /////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////

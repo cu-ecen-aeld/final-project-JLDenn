@@ -34,17 +34,26 @@ function load() {
 				
 				out += "</tbody>";
 				$('#content').html(out);
+			},
+			error: function(xhr, status, error){
+				$('#content').html("Connecting...");
 			}
 		});
 		
 		
-		xhttp_stat = new XMLHttpRequest();
-		xhttp_stat.onreadystatechange = function() {
-		if (this.readyState == 4 && this.status == 200) {
-				document.getElementById("connection").innerHTML = this.responseText;
-		}};
-		xhttp_stat.open("POST", "/cgi-bin/tools", true);
-		xhttp_stat.send("action=status");
+		$.ajax({
+			
+			type: "POST",
+			//dataType: "json",
+			url: "/cgi-bin/tools",
+			data: "action=status",
+			complete: function(data) {
+				$('#connection').html(data.responseText);
+			},
+			error: function(xhr, status, error){
+				$('#connection').html("Unknown");
+			}
+		});
 
 	}, 1000);
 }
