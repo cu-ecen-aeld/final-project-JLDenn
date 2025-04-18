@@ -4,6 +4,10 @@ set device [lindex $argv 0];
 
 set btstat_file "/tmp/btconn"
 
+log_file /var/log/btpair.log
+
+#system logger "\"btpair.exp Connecting to BLE scanner\""
+
 spawn /usr/bin/bluetoothctl
 expect "Agent registered"
 send -- "power on\r"
@@ -23,13 +27,17 @@ expect {
 			timeout {send -- "scan on\r"}
 		}
 		
+		#system logger "\"btpair.exp Waiting for specified BLE scanner to appear in the scan results\""
+		
 		set timeout 0
 		expect "Device $device"
 		
 		
 		while { 1 } {
 		
+			#system logger "\"btpair.exp Pairing with scanner\""
 			send -- "pair $device\r"
+			
 			set timeout 5
 			expect {
 				-re "Confirm passkey (\[0-9]+)" { 
@@ -39,10 +47,14 @@ expect {
 				}
 				timeout { continue }
 			}
+			
+			#system logger "\"btpair.exp Approving the passkey generated\""
 			send -- "yes\r"
 			set timeout 30
 			expect {
 				"Pairing successful" { 
+					#system logger "\"btpair.exp Pairing success\""
+				
 					#set the btconn state to "Connecting (1)", to remove the passkey.
 					set fp [open "$btstat_file" w]
 					puts $fp "1"
@@ -53,6 +65,8 @@ expect {
 				timeout { continue }
 			}
 		}
+		
+		#system logger "\"btpair.exp Trusting the scanner\""
 		send -- "connect $device\r"
 		expect "Connection successful"
 		send -- "trust $device\r"
@@ -63,5 +77,6 @@ expect {
 	}
 }
 
+#system logger "\"btpair.exp exiting\""
 send -- "exit\r"
 expect eof

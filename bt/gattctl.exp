@@ -9,7 +9,11 @@ set handle_btn 0x0000
 set handle_temp 0x0000
 set timeout 30
 
+
+
 spawn /usr/bin/gatttool -b $device -I
+
+log_file /var/log/gattctl.log
 
 # Set the btconn file to "Connecting (1)"
 set fp [open "$btstat_file" w]
@@ -21,12 +25,15 @@ send -- "connect\r"
 expect {
         "Connection successful" {send -- "sec-level high\r"}
         timeout {
+				#system logger "\"gattctl.exp BLE connection attempt timed out\""
                 send -- "exit\r"
                 exit 1
         }
 }
 
 expect "$device"
+
+#system logger "\"gattctl.exp BLE connected. Finding GATT handles\""
 
 send -- "char-desc\r"
 set timeout 20
@@ -40,25 +47,30 @@ set fp [open "$btstat_file" w]
 puts $fp "2"
 close $fp
 
+#system logger "\"gattctl.exp BLE connected with GATT handles: tbstate=$handle_tbstate, scan=$handle_scan\""
+
 set i 1
 set timeout 6000
 while {$i} {
-        expect {
-                -re "Indication   handle = $handle_scan value: (\[0-9a-f ]+)" {
-                        system $datactrl_file scan "\"$expect_out(1,string)\""
+    expect {
+		-re "Indication   handle = $handle_scan value: (\[0-9a-f ]+)" {
+				system $datactrl_file scan "\"$expect_out(1,string)\""
 
-                        set fp [open "$tbstate_file" "r"]
+				#system logger "\"gattctl.exp Tool scan indication received: $expect_out(1,string)\""
 
-			set tbstate [read $fp]
-			close $fp
+				set fp [open "$tbstate_file" "r"]
+				set tbstate [read $fp]
+				close $fp
 			
 			set timeout 5
 			send -- "char-write-req $handle_tbstate \"$tbstate\"\r"
 			expect "Characteristic value was written successfully"
 			
-			set timeout 600
+			set timeout 6000
 		}
 		"Invalid file descriptor." {
+			#system logger "\"gattctl.exp BLE connection failed or was terminated\""
+		
 			#set the btconn state to "Disconnected (0)"
 			set fp [open "$btstat_file" w]
 			puts $fp "0"
@@ -67,6 +79,8 @@ while {$i} {
 			set i 0
 		}
 		timeout {
+			#system logger "\"gattctl.exp Periodic loop timed out. Time to verify we're still connected\""
+		
 			#set the btconn state to "Disconnected (0)"
 			set fp [open "$btstat_file" w]
 			puts $fp "0"
