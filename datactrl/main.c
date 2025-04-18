@@ -112,6 +112,8 @@ static int scan(int argc, char *argv[]){
 		if(!t->state){
 			tbstate.toolOut++;
 			strncpy(toolName, t->name, sizeof(toolName));
+			//Ensure we have a terminator at the end since we're not guaranteed that with strncpy.
+			toolName[sizeof(toolName)-1] = '\0';
 		}
 		
 		t = t->next;
