@@ -37,7 +37,8 @@ function load() {
 			},
 			error: function(xhr, status, error){
 				$('#content').html("Connecting...");
-			}
+			},
+			timeout: 1000
 		});
 		
 		
@@ -52,7 +53,8 @@ function load() {
 			},
 			error: function(xhr, status, error){
 				$('#connection').html("Unknown");
-			}
+			},
+			timeout: 1000
 		});
 
 	}, 1000);

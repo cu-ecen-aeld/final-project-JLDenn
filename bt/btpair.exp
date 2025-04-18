@@ -34,7 +34,7 @@ expect {
 			expect {
 				-re "Confirm passkey (\[0-9]+)" { 
 					set fp [open "$btstat_file" w]
-					puts $fp "p\"$expect_out(1,string)\""
+					puts $fp "p$expect_out(1,string)"
 					close $fp 
 				}
 				timeout { continue }
