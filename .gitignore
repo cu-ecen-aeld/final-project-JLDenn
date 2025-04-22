@@ -6,3 +6,5 @@ bt/bt.conf
 datactrl/datactrl
 database
 database/*
+
+btbin/btbin
