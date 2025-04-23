@@ -1,10 +1,8 @@
-#I (Justin Denning) wrote most of this file for ECEN5813 last semester, but modified it to fit 
-#this assignment (assignment 2) for ECEN5713 spring 2025
 
 EXEC     = btctl
 CC       = $(CROSS_COMPILE)gcc
 
-CFLAGS   = -Wall -Werror -std=gnu11
+CFLAGS   = -Wall -Werror -std=gnu11	-Ibluez
 
 LDFLAGS  = 
 
@@ -25,5 +23,5 @@ ${EXEC}: $(OBJ)
 .PHONY: clean local
 
 clean:
-		@rm -rf *.o ${EXEC}
+		@rm -rf *.o bluez/lib/*.o ${EXEC}
 

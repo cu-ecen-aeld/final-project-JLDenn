@@ -1,0 +1,3 @@
+[submodule "btbin/bluez"]
+	path = btbin/bluez
+	url = https://github.com/bluez/bluez.git

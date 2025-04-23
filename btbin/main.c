@@ -4,9 +4,9 @@
 #include <signal.h>
 #include <unistd.h>
 
-#include "bluez/lib/bluetooth.h"
-#include "bluez/lib/hci.h"
-#include "bluez/lib/hci_lib.h"
+#include "lib/bluetooth.h"
+#include "lib/hci.h"
+#include "lib/hci_lib.h"
 
 #define EIR_FLAGS                   0x01  /* flags */
 #define EIR_UUID16_SOME             0x02  /* 16-bit UUID, more available */
@@ -144,11 +144,10 @@ int main(int argc, char *argv[]){
 	uint16_t window = htobs(0x0010);
 	uint8_t filter_dup = 0x01;
 	
-	printf("Starting...\n");
+	printf("Starting LE Scan...\n");
 	
 	int dev_id = hci_devid("hci0");
 	
-	printf("dev_id: %i\n", dev_id);
 	
 	dd = hci_open_dev(dev_id);
 	if (dd < 0) {
@@ -156,7 +155,6 @@ int main(int argc, char *argv[]){
 		exit(1);
 	}
 	
-	printf("dev_id: %i\n", dev_id);
 
 	err = hci_le_set_scan_parameters(dd, scan_type, interval, window,
 						own_type, filter_policy, 10000);
